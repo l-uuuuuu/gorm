@@ -59,8 +59,9 @@ type Config struct {
 	// Plugins registered plugins
 	Plugins map[string]Plugin
 
-	callbacks  *callbacks
-	cacheStore *sync.Map
+	callbacks   *callbacks
+	cacheStore  *sync.Map
+	CurrVersion string
 }
 
 // Apply update config to new config
@@ -167,6 +168,10 @@ func Open(dialector Dialector, opts ...Option) (db *DB, err error) {
 
 	if config.cacheStore == nil {
 		config.cacheStore = &sync.Map{}
+	}
+
+	if config.CurrVersion == "" {
+		schema.CurrVersion = config.CurrVersion
 	}
 
 	db = &DB{Config: config, clone: 1}

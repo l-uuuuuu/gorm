@@ -3,6 +3,7 @@ package schema_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"reflect"
 	"sync"
 	"testing"
@@ -330,5 +331,27 @@ func TestTypeAliasField(t *testing.T) {
 
 	for _, f := range fields {
 		checkSchemaField(t, alias, f, func(f *schema.Field) {})
+	}
+}
+
+func TestVersionCompare(t *testing.T) {
+	cases := []struct {
+		v1       string
+		v2       string
+		Expected int
+	}{
+		{"3.3.3", "3.6.3", -1},
+		{"3.6.3", "3.6.3", 0},
+		{"3.7.2", "3.6.3", 1},
+		{"3.5.0", "3.8.0", -1},
+	}
+
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("/%v/%v", c.v1, c.v2), func(t *testing.T) {
+			if ans := schema.VersionCompare(c.v1, c.v2); ans != c.Expected {
+				t.Fatalf("%v * %v expected %d, but %d got",
+					c.v1, c.v2, c.Expected, ans)
+			}
+		})
 	}
 }

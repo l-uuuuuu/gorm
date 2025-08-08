@@ -21,6 +21,7 @@ var (
 	TimeReflectType    = reflect.TypeOf(time.Time{})
 	TimePtrReflectType = reflect.TypeOf(&time.Time{})
 	ByteReflectType    = reflect.TypeOf(uint8(0))
+	CurrVersion        = ""
 )
 
 type (
@@ -349,6 +350,21 @@ func (schema *Schema) ParseField(fieldStruct reflect.StructField) *Field {
 		}
 	}
 
+	if fieldVersion, ok := field.TagSettings["VERSION"]; ok && CurrVersion != "" {
+		fieldVersion = strings.ToLower(strings.TrimSpace(fieldVersion))
+		fmt.Printf("into version , fieldVersion:[%v] CurrVersion:[%v]\n", fieldVersion, CurrVersion)
+
+		if fieldVersion != "" && VersionCompare(fieldVersion, CurrVersion) > 0 {
+			fmt.Printf("skip field[%v] , version:[%v]\n", field.Name, fieldVersion)
+
+			field.Creatable = false
+			field.Updatable = false
+			field.Readable = false
+			field.DataType = ""
+			field.IgnoreMigration = true
+		}
+	}
+
 	if v, ok := field.TagSettings["->"]; ok {
 		field.Creatable = false
 		field.Updatable = false
@@ -431,6 +447,31 @@ func (schema *Schema) ParseField(fieldStruct reflect.StructField) *Field {
 	}
 
 	return field
+}
+
+func VersionCompare(v1, v2 string) int {
+
+	v1Parts := strings.Split(v1, ".")
+	v2Parts := strings.Split(v2, ".")
+
+	for i := 0; i < len(v1Parts) || i < len(v2Parts); i++ {
+
+		var v1Int, v2Int int
+		if i < len(v1Parts) {
+			v1Int, _ = strconv.Atoi(v1Parts[i])
+		}
+		if i < len(v2Parts) {
+			v2Int, _ = strconv.Atoi(v2Parts[i])
+		}
+
+		if v1Int > v2Int {
+			return 1
+		} else if v1Int < v2Int {
+			return -1
+		}
+	}
+
+	return 0
 }
 
 // create valuer, setter when parse struct
